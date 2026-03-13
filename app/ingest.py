@@ -5,7 +5,7 @@ from langchain_community.vectorstores.pgvector import PGVector
 from pathlib import Path
 import re
 
-from config import DB_CONNECTION, COLLECTION_NAME
+from app.config import DB_CONNECTION, COLLECTION_NAME
 
 
 def clean_text(text: str) -> str:
@@ -28,7 +28,7 @@ def load_documents():
         for doc in pdf_docs:
             # remove NUL characters
             doc.page_content = clean_text(doc.page_content)
-             # set source metadata of each page to filename
+            # set source metadata of each page to filename
             doc.metadata["source"] = file.name
 
         docs.extend(pdf_docs)
@@ -57,6 +57,24 @@ def ingest():
     )
 
     print("Documents ingested successfully")
+
+
+def ingest_file(path):
+    loader = PyPDFLoader(path)
+    docs = loader.load()
+
+    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+
+    split_docs = splitter.split_documents(docs)
+
+    embeddings = OllamaEmbeddings(model="nomic-embed-text")
+
+    PGVector.from_documents(
+        documents=split_docs,
+        embedding=embeddings,
+        collection_name=COLLECTION_NAME,
+        connection_string=DB_CONNECTION,
+    )
 
 
 if __name__ == "__main__":

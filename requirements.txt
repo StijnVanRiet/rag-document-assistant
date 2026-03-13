@@ -9,3 +9,4 @@ pypdf
 tiktoken
 python-dotenv
 pathlib
+python-multipart
