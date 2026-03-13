@@ -1,8 +1,9 @@
 from fastapi import FastAPI, UploadFile, File
 from pydantic import BaseModel
+import shutil
+
 from app.rag import ask_question
 from app.ingest import ingest_file
-import shutil
 
 app = FastAPI()
 

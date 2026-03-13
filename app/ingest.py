@@ -15,38 +15,30 @@ def clean_text(text: str) -> str:
     """
     text = text.replace("\x00", "")  # remove NUL characters
     text = re.sub(r"\s+", " ", text)  # normalize whitespace
-    text = text.strip()
-    return text
-
-# TODO: duplicate code
-def load_documents():
-    docs = []
-    for file in Path(COLLECTION_NAME).glob("*.pdf"):
-
-        print(f"Loading {file}")
-
-        loader = PyPDFLoader(str(file))
-        pdf_docs = loader.load()
-
-        for doc in pdf_docs:
-            doc.page_content = clean_text(doc.page_content)
-            # set source metadata of each page to filename
-            doc.metadata["source"] = file.name
-            # page number
-            doc.metadata["page"] = doc.metadata.get("page", 0)
-
-        docs.extend(pdf_docs)
-
-    return docs
+    return text.strip()
 
 
-def ingest():
-    documents = load_documents()
+def load_pdf(path: str):
+    """
+    Load a PDF, clean text, and set metadata.
+    """
+    loader = PyPDFLoader(path)
+    pdf_docs = loader.load()
+    filename = os.path.basename(path)
 
-    print(f"Loaded {len(documents)} pages")
+    for doc in pdf_docs:
+        doc.page_content = clean_text(doc.page_content)
+        doc.metadata["source"] = filename
+        doc.metadata["page"] = doc.metadata.get("page", 0)
 
+    return pdf_docs
+
+
+def split_and_ingest(documents, collection_name=COLLECTION_NAME):
+    """
+    Split documents into chunks, create embeddings, and store in PGVector.
+    """
     splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-
     split_docs = splitter.split_documents(documents)
 
     print(f"Created {len(split_docs)} chunks")
@@ -56,39 +48,35 @@ def ingest():
     PGVector.from_documents(
         documents=split_docs,
         embedding=embeddings,
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         connection_string=DB_CONNECTION,
     )
+
+
+def ingest_folder(folder_path=COLLECTION_NAME):
+    """
+    Ingest all PDF files in a folder.
+    """
+    all_docs = []
+    for file in Path(folder_path).glob("*.pdf"):
+        print(f"Loading {file}")
+        docs = load_pdf(str(file))
+        all_docs.extend(docs)
+
+    print(f"Loaded {len(all_docs)} pages")
+    split_and_ingest(all_docs)
 
     print("Documents ingested successfully")
 
 
 def ingest_file(path):
-    loader = PyPDFLoader(path)
-    pdf_docs = loader.load()
-    filename = os.path.basename(path)
-    for doc in pdf_docs:
-        doc.page_content = clean_text(doc.page_content)
-        # set source metadata of each page to filename
-        doc.metadata["source"] = filename
-        # page number
-        doc.metadata["page"] = doc.metadata.get("page", 0)
-
-    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
-
-    split_docs = splitter.split_documents(pdf_docs)
-
-    embeddings = OllamaEmbeddings(model="nomic-embed-text")
-
-    PGVector.from_documents(
-        documents=split_docs,
-        embedding=embeddings,
-        collection_name=COLLECTION_NAME,
-        connection_string=DB_CONNECTION,
-    )
-
-    print(f"{filename} ingested successfully")
+    """
+    Ingest a single PDF file.
+    """
+    docs = load_pdf(path)
+    split_and_ingest(docs)
+    print(f"{os.path.basename(path)} ingested successfully")
 
 
 if __name__ == "__main__":
-    ingest()
+    ingest_folder()
