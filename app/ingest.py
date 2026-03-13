@@ -3,13 +3,16 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
 from langchain_community.vectorstores.pgvector import PGVector
 from pathlib import Path
+import re
 
 from config import DB_CONNECTION, COLLECTION_NAME
 
 
 def clean_text(text: str) -> str:
     if text:
-        return text.replace("\x00", "")
+        text = text.replace("\x00", "")
+        text = re.sub(r"\s+", " ", text)
+        text = text.strip()
     return text
 
 
@@ -25,7 +28,7 @@ def load_documents():
         for doc in pdf_docs:
             # remove NUL characters
             doc.page_content = clean_text(doc.page_content)
-            # set source metadata of each page to filename
+             # set source metadata of each page to filename
             doc.metadata["source"] = file.name
 
         docs.extend(pdf_docs)
