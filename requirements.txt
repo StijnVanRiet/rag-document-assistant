@@ -10,3 +10,5 @@ tiktoken
 python-dotenv
 pathlib
 python-multipart
+streamlit
+requests

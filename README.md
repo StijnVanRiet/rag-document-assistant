@@ -1,9 +1,9 @@
 # RAG Document Assistant
 
 A basic **Retrieval-Augmented Generation (RAG) system** for PDF documents using **vector databases** and **local LLMs**.  
-This project demonstrates a complete pipeline: document ingestion, vector search, LLM integration, and an API for querying documents.  
+This project demonstrates a complete pipeline: document ingestion, vector search, LLM integration, and an API for querying documents. Also includes a Streamlit chat interface that allows users to interact with the RAG system and ask questions about uploaded documents.  
 
-Built with **Python**, **FastAPI**, **PGVector**, and **Ollama LLMs**.
+Built with **Python**, **FastAPI**, **PGVector**, **Ollama LLMs** and **Streamlit**.
 
 ---
 
@@ -16,15 +16,18 @@ Built with **Python**, **FastAPI**, **PGVector**, and **Ollama LLMs**.
 - **REST API** for asking questions
 - **Upload endpoint** for adding new documents dynamically
 - Local, free LLM usage (no OpenAI API required)
+- **Streamlit** chat interface
 
 ---
 
 ## Architecture
 
 ```markdown
-User Question  
+User  
 ↓  
-FastAPI API  
+Streamlit Chat UI  
+↓  
+FastAPI /ask endpoint  
 ↓  
 Retriever (PGVector)  
 ↓  
@@ -79,6 +82,16 @@ python -m app.ingest
 uvicorn app.main:app --reload 
 ```
 
-8. Open browser:
+8. Open browser to test API:
 
 <http://127.0.0.1:8000/docs>
+
+9. Start UI:
+
+```bash
+streamlit run ui/chat.py
+```
+
+10. Open browser to test UI:
+
+<http://localhost:8501>
