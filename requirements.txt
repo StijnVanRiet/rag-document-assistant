@@ -3,6 +3,7 @@ uvicorn
 langchain
 langchain-community
 langchain-ollama
+langchain_postgres
 psycopg2-binary
 pgvector
 pypdf

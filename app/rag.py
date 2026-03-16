@@ -1,4 +1,4 @@
-from langchain_community.vectorstores.pgvector import PGVector
+from langchain_postgres import PGVector
 from langchain_ollama import OllamaEmbeddings, ChatOllama
 
 from app.config import DB_CONNECTION, COLLECTION_NAME
@@ -7,12 +7,12 @@ from app.config import DB_CONNECTION, COLLECTION_NAME
 embeddings = OllamaEmbeddings(model="nomic-embed-text")
 
 vector_store = PGVector(
-    connection_string=DB_CONNECTION,
-    embedding_function=embeddings,
+    embeddings=embeddings,
     collection_name=COLLECTION_NAME,
+    connection=DB_CONNECTION,
 )
 
-retriever = vector_store.as_retriever()
+retriever = vector_store.as_retriever(search_kwargs={"k": 4})  # top k chunks
 
 llm = ChatOllama(model="llama3.2", temperature=0)
 

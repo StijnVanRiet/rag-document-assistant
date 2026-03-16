@@ -1,12 +1,20 @@
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
-from langchain_community.vectorstores.pgvector import PGVector
+from langchain_postgres import PGVector
 from pathlib import Path
 import re
 import os
 
 from app.config import DB_CONNECTION, COLLECTION_NAME
+
+embeddings = OllamaEmbeddings(model="nomic-embed-text")
+
+vector_store = PGVector(
+    embeddings=embeddings,
+    collection_name=COLLECTION_NAME,
+    connection=DB_CONNECTION,
+)
 
 
 def clean_text(text: str) -> str:
@@ -34,23 +42,20 @@ def load_pdf(path: str):
     return pdf_docs
 
 
-def split_and_ingest(documents, collection_name=COLLECTION_NAME):
+def split_and_ingest(documents):
     """
     Split documents into chunks, create embeddings, and store in PGVector.
     """
-    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=1000,
+        chunk_overlap=200,
+        add_start_index=True,  # start of chunk in original text
+    )
     split_docs = splitter.split_documents(documents)
 
     print(f"Created {len(split_docs)} chunks")
 
-    embeddings = OllamaEmbeddings(model="nomic-embed-text")
-
-    PGVector.from_documents(
-        documents=split_docs,
-        embedding=embeddings,
-        collection_name=collection_name,
-        connection_string=DB_CONNECTION,
-    )
+    vector_store.add_documents(split_docs)
 
 
 def ingest_folder(folder_path=COLLECTION_NAME):

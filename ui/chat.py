@@ -36,12 +36,26 @@ if prompt:
 
     st.session_state.messages.append({"role": "assistant", "content": answer})
 
-uploaded_file = st.file_uploader("Upload a PDF")
+if "uploader_key" not in st.session_state:
+    st.session_state.uploader_key = 0
+
+uploaded_file = st.file_uploader(
+    "Upload a PDF", key=f"pdf_uploader_{st.session_state.uploader_key}"
+)
+
+if "upload_success" not in st.session_state:
+    st.session_state.upload_success = False
+
+if st.session_state.upload_success:
+    st.success("Document uploaded and indexed.")
+    st.session_state.upload_success = False
 
 if uploaded_file:
 
-    files = {"file": uploaded_file.getvalue()}
+    with st.spinner("Uploading and indexing document..."):
+        r = requests.post("http://localhost:8000/upload", files={"file": uploaded_file})
 
-    r = requests.post("http://localhost:8000/upload", files={"file": uploaded_file})
-
-    st.success("Document uploaded and indexed.")
+    if r.status_code == 200:
+        st.session_state.upload_success = True
+        st.session_state.uploader_key += 1
+        st.rerun()
